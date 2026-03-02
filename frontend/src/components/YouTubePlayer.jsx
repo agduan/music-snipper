@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 function YouTubePlayer({ url, startSeconds, endSeconds }) {
-  const playerRef = useRef(null);
+  const containerRef = useRef(null);
+  const playerInstanceRef = useRef(null);
   const intervalRef = useRef(null);
-  const [player, setPlayer] = useState(null);
 
   const extractVideoId = (url) => {
     const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
@@ -30,21 +30,27 @@ function YouTubePlayer({ url, startSeconds, endSeconds }) {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
-      if (player) {
-        player.destroy();
+      const p = playerInstanceRef.current;
+      if (p && typeof p.destroy === 'function') {
+        try {
+          p.destroy();
+        } catch (_) {}
+        playerInstanceRef.current = null;
       }
     };
   }, [videoId, startSeconds, endSeconds]);
 
   const createPlayer = () => {
-    if (!videoId || !playerRef.current) return;
+    if (!videoId || !containerRef.current) return;
 
-    const newPlayer = new window.YT.Player(playerRef.current, {
+    const newPlayer = new window.YT.Player(containerRef.current, {
       videoId,
       playerVars: {
         start: startSeconds,
         autoplay: 1,
+        rel: 0,
       },
       events: {
         onStateChange: (event) => {
@@ -62,14 +68,18 @@ function YouTubePlayer({ url, startSeconds, endSeconds }) {
       },
     });
 
-    setPlayer(newPlayer);
+    playerInstanceRef.current = newPlayer;
   };
 
   if (!videoId) {
     return <div style={{ color: 'white', padding: '20px' }}>Invalid YouTube URL</div>;
   }
 
-  return <div ref={playerRef} style={{ width: '100%', height: '100%' }} />;
+  return (
+    <div style={{ width: '100%', height: '100%' }}>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+    </div>
+  );
 }
 
 export default YouTubePlayer;

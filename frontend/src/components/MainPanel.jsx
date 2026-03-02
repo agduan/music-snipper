@@ -186,7 +186,7 @@ function MainPanel({
             {startFormatted != null && (
               <span className="timestamp-pill">
                 {startFormatted}
-                {endFormatted != null && <>{' \u2192 '}{endFormatted}</>}
+                {endFormatted != null && <>{' - '}{endFormatted}</>}
               </span>
             )}
 
@@ -245,7 +245,7 @@ function MainPanel({
             )}
           </div>
 
-          <div className={`player-container ${selectedSnippet.platform === 'spotify' ? 'player-spotify' : ''}`}>
+          <div className={`player-container ${selectedSnippet.platform === 'spotify' ? 'player-spotify' : 'player-youtube'}`}>
             {selectedSnippet.platform === 'youtube' ? (
               <YouTubePlayer
                 url={selectedSnippet.url}

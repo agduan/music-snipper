@@ -63,8 +63,9 @@ function App() {
     if (user) {
       fetchSnippets();
     } else {
-      setSnippets(defaultSnippets);
-      setSelectedSnippet(defaultSnippets.length > 0 ? defaultSnippets[0] : null);
+      const sorted = [...defaultSnippets].sort((a, b) => new Date(b.saved_at) - new Date(a.saved_at));
+      setSnippets(sorted);
+      setSelectedSnippet(sorted.length > 0 ? sorted[0] : null);
       setMode('list');
     }
   }, [user]);
@@ -82,7 +83,7 @@ function App() {
       const snapshot = await getDocs(q);
       const data = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
       setSnippets(data);
-      if (data.length > 0 && !selectedSnippet) {
+      if (data.length > 0) {
         setSelectedSnippet(data[0]);
       }
     } catch (error) {
@@ -244,17 +245,16 @@ function App() {
         <div className="app-title-group">
           <img src="/favicon.png" alt="" className="app-favicon" />
           <h1 className="app-title">alex{'\u2019'}s music</h1>
-          <p className="app-subtitle">BANGERS all the time. Save music snippets.</p>
-          <p className="app-subtitle">TO-DO: 1) Unchop spray effect 2) Add Spotify timestamping 3) Friend password 4) Mobile</p>
+          <p className="app-subtitle">Save music snippets. TO-DO: 1) Unchop spray effect 2) Friend password 3) Mobile</p>
         </div>
         <div className="app-header-right">
           {user ? (
             <button className="auth-link" onClick={() => signOut(auth)}>
-              It{'\u2019'}s {user.email.slice(0, 4)}!
+              It{'\u2019'}s <span className="auth-link-emphasis">{user.email.slice(0, 4).replace(/^./, (c) => c.toUpperCase())}</span>!
             </button>
           ) : (
             <button className="auth-link" onClick={() => setShowLogin(true)}>
-              Sign in to save snippets king!!!
+              <span className="auth-link-emphasis">Sign in</span> to save snippets king!!!
             </button>
           )}
         </div>

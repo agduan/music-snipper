@@ -254,7 +254,10 @@ function Sidebar({
                     })}
                     {snippet.start_seconds != null && (
                       <span className="snippet-item-timestamp">
-                        {' · '}{formatTimestamp(snippet.start_seconds)}
+                        {' · '}
+                        {snippet.end_seconds != null
+                          ? `${formatTimestamp(snippet.start_seconds)} - ${formatTimestamp(snippet.end_seconds)}`
+                          : formatTimestamp(snippet.start_seconds)}
                       </span>
                     )}
                   </span>
