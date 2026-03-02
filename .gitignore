@@ -1,8 +1,49 @@
+# Dependencies
 node_modules
+
+# Build output
 dist
-*.db
-.DS_Store
-.firebase
-.firebaserc
+.vite
+
+# Environment & secrets
 .env
-.env.local
+.env.*
+!.env.example
+
+# Firebase (keep .firebaserc if you want to share project config)
+.firebase
+
+# Database
+*.db
+
+# Logs & debug
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test coverage
+coverage
+.nyc_output
+*.lcov
+
+# Cache
+.eslintcache
+.stylelintcache
+.cache
+.parcel-cache
+*.tsbuildinfo
+
+# IDE & editor (Cursor stores local state, chat history, etc.)
+.cursor
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.tgz
+.report.*.json

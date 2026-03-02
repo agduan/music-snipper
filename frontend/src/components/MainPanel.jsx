@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Pencil } from 'lucide-react';
+import { Pencil, List } from 'lucide-react';
 import YouTubePlayer from './YouTubePlayer';
 import SpotifyPlayer from './SpotifyPlayer';
 import { getTagColor } from '../utils/tagColors';
@@ -14,6 +14,8 @@ function MainPanel({
   setAddFormNote,
   dark,
   readOnly,
+  isMobile,
+  onBackToList,
 }) {
   const [editingDate, setEditingDate] = useState(false);
   const [dateValue, setDateValue] = useState('');
@@ -120,6 +122,28 @@ function MainPanel({
     <div className="main-panel">
       <div className="snippet-view">
         <div className="snippet-view-inner">
+          {isMobile && onBackToList && (
+            <div className="main-panel-mobile-header">
+              <button
+                className="main-panel-back"
+                onClick={onBackToList}
+                aria-label="Back to list"
+              >
+                <List size={18} />
+                <span>List</span>
+              </button>
+              {!readOnly && (
+                <button
+                  className="edit-button"
+                  onClick={() => onEditSnippet(selectedSnippet)}
+                  title="Edit snippet"
+                >
+                  <Pencil size={16} />
+                  <span>Edit</span>
+                </button>
+              )}
+            </div>
+          )}
           <div className="snippet-view-header">
             <div className="snippet-view-titles">
               {selectedSnippet.label && (
@@ -155,7 +179,7 @@ function MainPanel({
                 </h2>
               )}
             </div>
-            {!readOnly && (
+            {!readOnly && !isMobile && (
               <button
                 className="edit-button"
                 onClick={() => onEditSnippet(selectedSnippet)}

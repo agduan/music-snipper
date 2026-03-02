@@ -14,6 +14,7 @@ import {
 import { auth, db } from './firebase';
 import { extractDominantColor } from './utils/albumColor';
 import { defaultSnippets } from './data/defaultSnippets';
+import { useMediaQuery } from './hooks/useMediaQuery';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
 import MainPanel from './components/MainPanel';
@@ -31,6 +32,14 @@ function App() {
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
   const [sprayOn, setSprayOn] = useState(() => localStorage.getItem('spray') !== 'off');
   const [sprayColor, setSprayColor] = useState('#8C7E6F');
+  const isMobile = useMediaQuery('(max-width: 767px)');
+  const [mobileView, setMobileView] = useState('list');
+
+  useEffect(() => {
+    if (isMobile && mobileView === 'detail' && !selectedSnippet) {
+      setMobileView('list');
+    }
+  }, [isMobile, mobileView, selectedSnippet]);
 
   useEffect(() => {
     if (selectedSnippet?.thumbnail_url) {
@@ -135,6 +144,12 @@ function App() {
     setEditingSnippet(snippet);
     setAddFormNote(snippet.note || '');
     setMode('edit');
+    if (isMobile) setMobileView('list');
+  };
+
+  const handleSelectSnippet = (snippet) => {
+    setSelectedSnippet(snippet);
+    if (isMobile) setMobileView('detail');
   };
 
   const handleSaveEdit = async (snippetData) => {
@@ -245,12 +260,12 @@ function App() {
         <div className="app-title-group">
           <img src="/favicon.png" alt="" className="app-favicon" />
           <h1 className="app-title">alex{'\u2019'}s music</h1>
-          <p className="app-subtitle">Save music snippets. TO-DO: 1) Unchop spray effect 2) Friend password 3) Mobile</p>
+          <p className="app-subtitle">Save music snippets. Fix spray effect, friends, grid view</p>
         </div>
         <div className="app-header-right">
           {user ? (
             <button className="auth-link" onClick={() => signOut(auth)}>
-              It{'\u2019'}s <span className="auth-link-emphasis">{user.email.slice(0, 4).replace(/^./, (c) => c.toUpperCase())}</span>!
+              It{'\u2019'}s {user.email.slice(0, 4).replace(/^./, (c) => c.toUpperCase())}!
             </button>
           ) : (
             <button className="auth-link" onClick={() => setShowLogin(true)}>
@@ -260,37 +275,45 @@ function App() {
         </div>
       </header>
       <div className="app">
-        <Sidebar
-          mode={mode}
-          setMode={(m) => {
-            setMode(m);
-            if (m !== 'edit') setEditingSnippet(null);
-          }}
-          snippets={snippets}
-          selectedSnippet={selectedSnippet}
-          setSelectedSnippet={setSelectedSnippet}
-          onSaveSnippet={handleSaveSnippet}
-          onSaveEdit={handleSaveEdit}
-          onUpdateSnippet={handleUpdateSnippet}
-          onDeleteSnippet={handleDeleteSnippet}
-          editingSnippet={editingSnippet}
-          addFormNote={addFormNote}
-          setAddFormNote={setAddFormNote}
-          dark={dark}
-          readOnly={!user}
-          onRequestLogin={() => setShowLogin(true)}
-        />
-        <MainPanel
-          mode={mode}
-          selectedSnippet={selectedSnippet}
-          onUpdateSnippet={handleUpdateSnippet}
-          onDeleteSnippet={handleDeleteSnippet}
-          onEditSnippet={handleEditSnippet}
-          addFormNote={addFormNote}
-          setAddFormNote={setAddFormNote}
-          dark={dark}
-          readOnly={!user}
-        />
+        {(!isMobile || mobileView === 'list') && (
+          <Sidebar
+            mode={mode}
+            setMode={(m) => {
+              setMode(m);
+              if (m !== 'edit') setEditingSnippet(null);
+              if (isMobile && (m === 'add' || m === 'list')) setMobileView('list');
+            }}
+            snippets={snippets}
+            selectedSnippet={selectedSnippet}
+            setSelectedSnippet={isMobile ? handleSelectSnippet : setSelectedSnippet}
+            onSaveSnippet={handleSaveSnippet}
+            onSaveEdit={handleSaveEdit}
+            onUpdateSnippet={handleUpdateSnippet}
+            onDeleteSnippet={handleDeleteSnippet}
+            editingSnippet={editingSnippet}
+            addFormNote={addFormNote}
+            setAddFormNote={setAddFormNote}
+            dark={dark}
+            readOnly={!user}
+            onRequestLogin={() => setShowLogin(true)}
+            isMobile={isMobile}
+          />
+        )}
+        {(!isMobile || mobileView === 'detail') && (
+          <MainPanel
+            mode={mode}
+            selectedSnippet={selectedSnippet}
+            onUpdateSnippet={handleUpdateSnippet}
+            onDeleteSnippet={handleDeleteSnippet}
+            onEditSnippet={handleEditSnippet}
+            addFormNote={addFormNote}
+            setAddFormNote={setAddFormNote}
+            dark={dark}
+            readOnly={!user}
+            isMobile={isMobile}
+            onBackToList={isMobile ? () => setMobileView('list') : undefined}
+          />
+        )}
       </div>
       {snippets.length > 0 && (
         <div className="stats-footer">

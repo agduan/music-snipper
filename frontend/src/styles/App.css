@@ -369,6 +369,29 @@
   border-color: var(--input-border-focus);
 }
 
+.form-note-textarea {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 15px;
+  line-height: 1.5;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.15s, background 0.3s, color 0.3s;
+}
+
+.form-note-textarea:focus {
+  border-color: var(--input-border-focus);
+}
+
+.form-note-textarea::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
 .form-row {
   display: flex;
   gap: 12px;
@@ -886,4 +909,90 @@
 
 .login-toggle:hover {
   color: var(--text-primary);
+}
+
+/* Mobile (master-detail layout) */
+@media (max-width: 767px) {
+  .app-wrapper {
+    padding: 12px 16px 80px;
+  }
+
+  .app-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    padding-top: 4px;
+    padding-bottom: 10px;
+  }
+
+  .app-header-left {
+    grid-column: 1;
+    grid-row: 1;
+    position: static;
+    justify-self: start;
+  }
+
+  .app-header-right {
+    grid-column: 2;
+    grid-row: 1;
+    position: static;
+    justify-self: end;
+  }
+
+  .app-title-group {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-top: 12px;
+  }
+
+  .app {
+    flex: 1;
+    width: 100%;
+  }
+
+  .sidebar {
+    width: 100%;
+    min-width: 0;
+    border-radius: 16px;
+    border-right: none;
+    border: 1px solid var(--border);
+  }
+
+  .main-panel {
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+  }
+
+  .main-panel-mobile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 16px;
+  }
+
+  .main-panel-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+
+  .main-panel-back:hover {
+    color: var(--text-primary);
+  }
+
+  .main-panel-mobile-header .edit-button {
+    padding: 6px 12px;
+  }
+
+  .snippet-view {
+    padding: 24px 20px;
+  }
 }

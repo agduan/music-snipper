@@ -14,9 +14,12 @@ function Sidebar({
   onUpdateSnippet,
   onDeleteSnippet,
   editingSnippet,
+  addFormNote,
+  setAddFormNote,
   dark,
   readOnly,
   onRequestLogin,
+  isMobile,
 }) {
   const [editingTitleId, setEditingTitleId] = useState(null);
   const [titleValue, setTitleValue] = useState('');
@@ -348,6 +351,19 @@ function Sidebar({
               placeholder="jazz, piano, chill"
             />
           </div>
+
+          {isMobile && (
+            <div className="form-group">
+              <label className="form-label">Note</label>
+              <textarea
+                className="form-note-textarea"
+                value={addFormNote}
+                onChange={(e) => setAddFormNote(e.target.value)}
+                placeholder="Add a note..."
+                rows={4}
+              />
+            </div>
+          )}
 
           <div className="form-actions">
             <button className="save-button" onClick={handleSubmit}>
