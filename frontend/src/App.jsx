@@ -31,7 +31,7 @@ function App() {
   const [addFormNote, setAddFormNote] = useState('');
   const [editingSnippet, setEditingSnippet] = useState(null);
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
-  const [sprayOn, setSprayOn] = useState(() => localStorage.getItem('spray') !== 'off');
+  const [sprayOn] = useState(() => localStorage.getItem('spray') !== 'off');
   const [sprayColor, setSprayColor] = useState('#8C7E6F');
   const isMobile = useMediaQuery('(max-width: 767px)');
   const [mobileView, setMobileView] = useState('list');
@@ -246,30 +246,16 @@ function App() {
               <img src="/rest.png" alt="Quarter rest" className="theme-icon-img" />
             ) : '\u266A'}
           </button>
-          <button
-            className="spray-toggle"
-            onClick={() => setSprayOn((s) => !s)}
-            title={sprayOn ? 'Turn spray off' : 'Turn spray on'}
-            aria-label={sprayOn ? 'Turn spray off' : 'Turn spray on'}
-          >
-            <img
-              src={sprayOn ? '/spray.png' : '/spray%20off.png'}
-              alt=""
-              className={`spray-toggle-img ${sprayOn ? 'spray-on' : ''}`}
-            />
-          </button>
         </div>
         <div className="app-title-group">
           <img src="/favicon.png" alt="" className="app-favicon" />
-          <h1 className="app-title">alex{'\u2019'}s music</h1>
-          <p className="app-subtitle">Save music snippets. Fix spray effect, friends, grid view</p>
+          <div className="app-title-copy">
+            <h1 className="app-title">alex{'\u2019'}s music</h1>
+            <p className="app-subtitle">Save music snippets</p>
+          </div>
         </div>
         <div className="app-header-right">
-          {user ? (
-            <button className="auth-link" onClick={() => signOut(auth)}>
-              It{'\u2019'}s {user.email.slice(0, 4).replace(/^./, (c) => c.toUpperCase())}!
-            </button>
-          ) : (
+          {!user && (
             <button className="auth-link" onClick={() => setShowLogin(true)}>
               <span className="auth-link">Sign in</span>
             </button>

@@ -151,6 +151,10 @@ function Sidebar({
   };
 
   const isFormMode = mode === 'add' || mode === 'edit';
+  const handleGridSelectSnippet = (snippet) => {
+    setBrowseView('list');
+    setSelectedSnippet(snippet);
+  };
 
   return (
     <div className="sidebar">
@@ -189,7 +193,7 @@ function Sidebar({
           <SnippetGrid
             snippets={snippets}
             selectedSnippet={selectedSnippet}
-            onSelectSnippet={setSelectedSnippet}
+            onSelectSnippet={handleGridSelectSnippet}
           />
         ) : (
         <div className="snippet-list">

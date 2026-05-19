@@ -9,6 +9,13 @@ function SnippetGrid({ snippets, selectedSnippet, onSelectSnippet }) {
           snippet.start_seconds,
           snippet.end_seconds
         );
+        const savedDateLabel = snippet.saved_at
+          ? new Date(snippet.saved_at).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })
+          : '';
 
         return (
           <button
@@ -18,6 +25,11 @@ function SnippetGrid({ snippets, selectedSnippet, onSelectSnippet }) {
             onClick={() => onSelectSnippet(snippet)}
           >
             <div className="snippet-grid-cover">
+              {savedDateLabel && (
+                <div className="snippet-grid-date">
+                  {savedDateLabel}
+                </div>
+              )}
               {snippet.thumbnail_url ? (
                 <img src={snippet.thumbnail_url} alt="" loading="lazy" />
               ) : (
@@ -29,15 +41,6 @@ function SnippetGrid({ snippets, selectedSnippet, onSelectSnippet }) {
             <div className="snippet-grid-info">
               <div className="snippet-grid-title">{snippet.title}</div>
               {snippet.label && <div className="snippet-grid-label">{snippet.label}</div>}
-              {snippet.saved_at && (
-                <div className="snippet-grid-date">
-                  {new Date(snippet.saved_at).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}
-                </div>
-              )}
               {timestampLabel && (
                 <div className="snippet-grid-timestamp">{timestampLabel}</div>
               )}
