@@ -278,6 +278,7 @@ function MainPanel({
               />
             ) : (
               <SpotifyPlayer
+                key={selectedSnippet.id}
                 url={selectedSnippet.url}
                 startSeconds={selectedSnippet.start_seconds}
                 endSeconds={selectedSnippet.end_seconds}

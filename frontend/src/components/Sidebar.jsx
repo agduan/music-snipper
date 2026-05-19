@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { List, Plus, Music, Trash2 } from 'lucide-react';
+import { List, LayoutGrid, Plus, Music, Trash2 } from 'lucide-react';
 import { getTagColor } from '../utils/tagColors';
+import { formatTimestamp } from '../utils/formatTimestamp';
+import SnippetGrid from './SnippetGrid';
 
 function Sidebar({
   mode,
   setMode,
+  browseView,
+  setBrowseView,
   snippets,
   selectedSnippet,
   setSelectedSnippet,
@@ -32,30 +36,6 @@ function Sidebar({
     tags: '',
     thumbnail_url: '',
   });
-
-  const formatTimestamp = (seconds) => {
-    if (seconds == null) return '';
-    const min = Math.floor(seconds / 60);
-    const sec = seconds % 60;
-    return `${min}:${sec.toString().padStart(2, '0')}`;
-  };
-
-  const relativeTime = (dateStr) => {
-    const now = Date.now();
-    const then = new Date(dateStr).getTime();
-    const diffMs = now - then;
-    const mins = Math.floor(diffMs / 60000);
-    if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `${days}d ago`;
-    const months = Math.floor(days / 30);
-    if (months < 12) return `${months}mo ago`;
-    const years = Math.floor(months / 12);
-    return `${years}y ago`;
-  };
 
   useEffect(() => {
     if (mode === 'edit' && editingSnippet) {
@@ -176,11 +156,24 @@ function Sidebar({
     <div className="sidebar">
       <div className="sidebar-header">
         <button
-          className={`icon-button ${mode === 'list' ? 'active' : ''}`}
-          onClick={() => handleModeChange('list')}
-          title="Browse snippets"
+          className={`icon-button ${mode === 'list' && browseView === 'list' ? 'active' : ''}`}
+          onClick={() => {
+            setBrowseView('list');
+            handleModeChange('list');
+          }}
+          title="List view"
         >
           <List size={20} />
+        </button>
+        <button
+          className={`icon-button ${mode === 'list' && browseView === 'grid' ? 'active' : ''}`}
+          onClick={() => {
+            setBrowseView('grid');
+            handleModeChange('list');
+          }}
+          title="Grid view"
+        >
+          <LayoutGrid size={20} />
         </button>
         <button
           className={`icon-button ${mode === 'add' ? 'active' : ''}`}
@@ -192,6 +185,13 @@ function Sidebar({
       </div>
 
       {!isFormMode ? (
+        browseView === 'grid' ? (
+          <SnippetGrid
+            snippets={snippets}
+            selectedSnippet={selectedSnippet}
+            onSelectSnippet={setSelectedSnippet}
+          />
+        ) : (
         <div className="snippet-list">
           {snippets.map((snippet) => (
             <motion.div
@@ -281,6 +281,7 @@ function Sidebar({
             </motion.div>
           ))}
         </div>
+        )
       ) : (
         <div className="add-form" onKeyDown={handleKeyDown}>
           {mode === 'edit' && (

@@ -1,6 +1,7 @@
 const SPOTIFY_AUTH = 'https://accounts.spotify.com/authorize';
 const SPOTIFY_TOKEN = 'https://accounts.spotify.com/api/token';
-const SCOPES = ['user-modify-playback-state', 'user-read-playback-state'];
+// `streaming` is required for the Web Playback SDK to output audio
+const SCOPES = ['streaming', 'user-modify-playback-state', 'user-read-playback-state'];
 
 function generateRandomString(length) {
   const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

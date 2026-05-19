@@ -10,14 +10,27 @@ import {
 
 const SpotifyContext = createContext(null);
 
+const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+
 export function SpotifyProvider({ children }) {
   const [deviceId, setDeviceId] = useState(null);
   const [player, setPlayer] = useState(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState(null);
+  const [nowPlaying, setNowPlaying] = useState(null);
 
   const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
   const cleanupRef = useRef(null);
+  const snippetMonitorRef = useRef(null);
+  const playerRef = useRef(null);
+  const deviceIdRef = useRef(null);
+
+  const clearSnippetMonitor = () => {
+    if (snippetMonitorRef.current) {
+      clearInterval(snippetMonitorRef.current);
+      snippetMonitorRef.current = null;
+    }
+  };
 
   const getToken = useCallback(async () => {
     if (!clientId) return null;
@@ -46,10 +59,10 @@ export function SpotifyProvider({ children }) {
     if (!clientId || !tokenReady || !getStoredToken()) return;
 
     const initPlayer = () => {
-      if (!window.Spotify || !window.Spotify.Player) return false;
+      if (!window.Spotify?.Player) return false;
 
       const spotifyPlayer = new window.Spotify.Player({
-        name: "Music Snipper",
+        name: 'Music Snipper',
         getOAuthToken: (cb) => {
           getToken().then((token) => {
             if (token) cb(token);
@@ -59,14 +72,31 @@ export function SpotifyProvider({ children }) {
       });
 
       spotifyPlayer.addListener('ready', ({ device_id }) => {
+        deviceIdRef.current = device_id;
         setDeviceId(device_id);
         setIsReady(true);
         setError(null);
       });
 
       spotifyPlayer.addListener('not_ready', () => {
+        deviceIdRef.current = null;
         setDeviceId(null);
         setIsReady(false);
+        setNowPlaying(null);
+      });
+
+      spotifyPlayer.addListener('player_state_changed', (state) => {
+        if (!state?.track_window?.current_track) {
+          setNowPlaying(null);
+          return;
+        }
+        const track = state.track_window.current_track;
+        setNowPlaying({
+          name: track.name,
+          artist: track.artists.map((a) => a.name).join(', '),
+          paused: state.paused,
+          position: state.position,
+        });
       });
 
       spotifyPlayer.addListener('initialization_error', ({ message }) => {
@@ -74,7 +104,7 @@ export function SpotifyProvider({ children }) {
       });
 
       spotifyPlayer.addListener('authentication_error', ({ message }) => {
-        setError(message);
+        setError(`${message} Try disconnecting and connecting again.`);
       });
 
       spotifyPlayer.addListener('account_error', ({ message }) => {
@@ -82,10 +112,13 @@ export function SpotifyProvider({ children }) {
       });
 
       spotifyPlayer.connect();
+      playerRef.current = spotifyPlayer;
       setPlayer(spotifyPlayer);
 
       return () => {
         spotifyPlayer.disconnect();
+        playerRef.current = null;
+        deviceIdRef.current = null;
       };
     };
 
@@ -99,6 +132,7 @@ export function SpotifyProvider({ children }) {
 
     return () => {
       window.onSpotifyWebPlaybackSDKReady = () => {};
+      clearSnippetMonitor();
       if (typeof cleanupRef.current === 'function') cleanupRef.current();
     };
   }, [clientId, tokenReady, getToken]);
@@ -112,35 +146,70 @@ export function SpotifyProvider({ children }) {
     initiateAuth(clientId);
   }, [clientId]);
 
+  const stopSnippet = useCallback(() => {
+    clearSnippetMonitor();
+    const p = playerRef.current;
+    if (p) {
+      try {
+        p.pause();
+      } catch (_) {}
+    }
+  }, []);
+
   const disconnect = useCallback(() => {
-    if (player) player.disconnect();
+    stopSnippet();
+    const p = playerRef.current;
+    if (p) p.disconnect();
+    playerRef.current = null;
+    deviceIdRef.current = null;
     setPlayer(null);
     setDeviceId(null);
     setIsReady(false);
+    setNowPlaying(null);
     disconnectSpotify();
     setError(null);
-  }, [player]);
+  }, [stopSnippet]);
 
   const playTrack = useCallback(
     async (trackUri, startMs, endMs) => {
+      const waitUntilPlaying = async (p, maxMs) => {
+        const deadline = Date.now() + maxMs;
+        while (Date.now() < deadline) {
+          const state = await p.getCurrentState();
+          if (state && !state.paused) return true;
+          await delay(200);
+        }
+        return false;
+      };
+
+      clearSnippetMonitor();
+
+      const start = Math.max(0, Number(startMs) || 0);
+      const end = endMs != null ? Number(endMs) : null;
+
+      const p = playerRef.current;
+      const activeDeviceId = deviceIdRef.current;
+
       const token = await getToken();
-      if (!token || !deviceId) {
-        setError('Not ready. Try disconnecting and reconnecting Spotify.');
+      if (!token || !activeDeviceId || !p) {
+        setError('Not ready. Disconnect Spotify, connect again, then retry.');
         return { ok: false, error: 'Not ready' };
       }
 
-      if (player?.activateElement) player.activateElement();
+      if (p.activateElement) {
+        try {
+          await p.activateElement();
+        } catch (_) {}
+      }
       setError(null);
 
-      const headers = {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      };
+      const authHeaders = { Authorization: `Bearer ${token}` };
+      const jsonHeaders = { ...authHeaders, 'Content-Type': 'application/json' };
 
       const transferRes = await fetch('https://api.spotify.com/v1/me/player', {
         method: 'PUT',
-        headers,
-        body: JSON.stringify({ device_ids: [deviceId], play: false }),
+        headers: jsonHeaders,
+        body: JSON.stringify({ device_ids: [activeDeviceId], play: false }),
       });
 
       if (!transferRes.ok && transferRes.status !== 404) {
@@ -154,50 +223,88 @@ export function SpotifyProvider({ children }) {
         return { ok: false, error: msg };
       }
 
-      if (transferRes.ok) {
-        await new Promise((r) => setTimeout(r, 200));
-      }
+      await delay(300);
 
-      const playRes = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify({
-          uris: [trackUri],
-          position_ms: startMs ?? 0,
-        }),
-      });
+      const playRes = await fetch(
+        `https://api.spotify.com/v1/me/player/play?device_id=${activeDeviceId}`,
+        {
+          method: 'PUT',
+          headers: jsonHeaders,
+          body: JSON.stringify({
+            uris: [trackUri],
+            position_ms: start,
+          }),
+        }
+      );
 
       if (!playRes.ok) {
         const errBody = await playRes.json().catch(() => ({}));
         const msg = errBody?.error?.message || `Play failed: ${playRes.status}`;
         if (playRes.status === 404) {
-          setError('No active device. Make sure "Music Snipper" appears in Spotify Connect devices.');
+          setError(
+            'Music Snipper device not found. Disconnect Spotify, connect again, then use Play snippet.'
+          );
         } else if (playRes.status === 403) {
-          setError('Spotify Premium required.');
+          setError('Spotify Premium required. If you recently connected, disconnect and connect again.');
         } else {
           setError(msg);
         }
         return { ok: false, error: msg };
       }
 
-      if (endMs != null && player) {
-        const checkPosition = () => {
-          player.getCurrentState().then((state) => {
-            if (!state) return;
-            const pos = state.position;
-            if (pos >= endMs) {
-              player.pause();
-              return;
-            }
-            setTimeout(checkPosition, 200);
-          });
-        };
-        setTimeout(checkPosition, 500);
+      if (start > 0) {
+        await delay(500);
+        await fetch(
+          `https://api.spotify.com/v1/me/player/seek?position_ms=${start}&device_id=${activeDeviceId}`,
+          { method: 'PUT', headers: authHeaders }
+        );
+        try {
+          await p.seek(start);
+        } catch (_) {}
       }
 
-      return { ok: true };
+      const started = await waitUntilPlaying(p, 8000);
+      if (!started) {
+        setError(
+          'Playback did not start. Disconnect Spotify and connect again (Premium required, grants streaming access).'
+        );
+        return { ok: false, error: 'Playback did not start' };
+      }
+
+      if (end == null || end <= start) {
+        return { ok: true };
+      }
+
+      const timeoutAt = Date.now() + (end - start) + 4000;
+
+      return new Promise((resolve) => {
+        const finish = (result) => {
+          clearSnippetMonitor();
+          resolve(result);
+        };
+
+        snippetMonitorRef.current = setInterval(async () => {
+          if (Date.now() > timeoutAt) {
+            try {
+              await p.pause();
+            } catch (_) {}
+            finish({ ok: true });
+            return;
+          }
+
+          const state = await p.getCurrentState();
+          if (!state) return;
+
+          if (state.position >= end) {
+            try {
+              await p.pause();
+            } catch (_) {}
+            finish({ ok: true });
+          }
+        }, 150);
+      });
     },
-    [deviceId, player, getToken]
+    [getToken]
   );
 
   const hasToken = !!getStoredToken();
@@ -207,8 +314,10 @@ export function SpotifyProvider({ children }) {
     isReady,
     deviceId,
     error,
+    nowPlaying,
     connect,
     disconnect,
+    stopSnippet,
     getToken,
     playTrack,
     clientId,

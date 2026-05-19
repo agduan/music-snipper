@@ -49,7 +49,7 @@ function YouTubePlayer({ url, startSeconds, endSeconds }) {
       videoId,
       playerVars: {
         start: startSeconds,
-        autoplay: 1,
+        autoplay: 0,
         rel: 0,
       },
       events: {

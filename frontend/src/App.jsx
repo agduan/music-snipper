@@ -25,6 +25,7 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [showLogin, setShowLogin] = useState(false);
   const [mode, setMode] = useState('list');
+  const [browseView, setBrowseView] = useState('list');
   const [snippets, setSnippets] = useState([]);
   const [selectedSnippet, setSelectedSnippet] = useState(null);
   const [addFormNote, setAddFormNote] = useState('');
@@ -117,6 +118,7 @@ function App() {
       setSnippets(sortBySavedAt([newSnippet, ...snippets]));
       setSelectedSnippet(newSnippet);
       setMode('list');
+      setBrowseView('list');
       setAddFormNote('');
     } catch (error) {
       console.error('Failed to save snippet:', error);
@@ -269,12 +271,24 @@ function App() {
             </button>
           ) : (
             <button className="auth-link" onClick={() => setShowLogin(true)}>
-              <span className="auth-link-emphasis">Sign in</span> to save snippets king!!!
+              <span className="auth-link">Sign in</span>
             </button>
           )}
         </div>
       </header>
-      <div className="app">
+      <div
+        className={[
+          'app',
+          browseView === 'grid' && mode === 'list' && 'browse-grid',
+          browseView === 'grid' &&
+            mode === 'list' &&
+            selectedSnippet &&
+            !isMobile &&
+            'browse-grid-detail',
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
         {(!isMobile || mobileView === 'list') && (
           <Sidebar
             mode={mode}
@@ -282,6 +296,11 @@ function App() {
               setMode(m);
               if (m !== 'edit') setEditingSnippet(null);
               if (isMobile && (m === 'add' || m === 'list')) setMobileView('list');
+            }}
+            browseView={browseView}
+            setBrowseView={(v) => {
+              setBrowseView(v);
+              if (v === 'grid' && !isMobile) setSelectedSnippet(null);
             }}
             snippets={snippets}
             selectedSnippet={selectedSnippet}
