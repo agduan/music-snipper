@@ -255,7 +255,11 @@ function App() {
           </div>
         </div>
         <div className="app-header-right">
-          {!user && (
+          {user ? (
+            <button className="auth-link" onClick={() => signOut(auth)}>
+              <span className="auth-link">Sign out</span>
+            </button>
+          ) : (
             <button className="auth-link" onClick={() => setShowLogin(true)}>
               <span className="auth-link">Sign in</span>
             </button>
