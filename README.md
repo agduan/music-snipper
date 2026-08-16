@@ -2,7 +2,7 @@
 
 Save bits of songs with notes from YouTube or Spotify. Auto-play from start to end timestamps on YouTube and Spotify (Spotify Premium required).
 
-![Homepage](./homepage.png)
+![List view](./listview.png) ![Grid view](./gridview.png)
 
 ## Usage
 
