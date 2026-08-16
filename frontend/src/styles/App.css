@@ -10,28 +10,6 @@
   position: relative;
 }
 
-/* Left-side spray texture, colored by selected album art */
-.spray-overlay {
-  position: fixed;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 55%;
-  pointer-events: none;
-  z-index: 2;
-  background-repeat: repeat;
-  background-size: 120px;
-  opacity: 0.5;
-  mask-image: radial-gradient(circle at 0% 100%, black 0%, transparent 45%);
-  -webkit-mask-image: radial-gradient(circle at 0% 100%, black 0%, transparent 45%);
-}
-
-.dark .spray-overlay {
-  opacity: 0.5;
-  mask-image: radial-gradient(circle at 0% 100%, black 0%, transparent 45%);
-  -webkit-mask-image: radial-gradient(circle at 0% 100%, black 0%, transparent 45%);
-}
-
 /* Header */
 .app-header {
   display: flex;
@@ -49,30 +27,6 @@
   align-items: center;
   gap: 8px;
   margin-right: 12px;
-}
-
-.spray-toggle {
-  padding: 4px;
-  opacity: 0.55;
-  transition: opacity 0.15s;
-}
-
-.spray-toggle:hover {
-  opacity: 1;
-}
-
-.spray-toggle-img {
-  height: 28px;
-  width: auto;
-  display: block;
-}
-
-.spray-toggle-img.spray-on {
-  transform: rotate(20deg);
-}
-
-.dark .spray-toggle-img {
-  filter: brightness(0) invert(1);
 }
 
 .theme-toggle {

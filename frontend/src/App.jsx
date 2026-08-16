@@ -12,7 +12,6 @@ import {
   doc,
 } from 'firebase/firestore';
 import { auth, db } from './firebase';
-import { extractDominantColor } from './utils/albumColor';
 import { defaultSnippets } from './data/defaultSnippets';
 import { useMediaQuery } from './hooks/useMediaQuery';
 import Login from './components/Login';
@@ -31,8 +30,6 @@ function App() {
   const [addFormNote, setAddFormNote] = useState('');
   const [editingSnippet, setEditingSnippet] = useState(null);
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
-  const [sprayOn] = useState(() => localStorage.getItem('spray') !== 'off');
-  const [sprayColor, setSprayColor] = useState('#8C7E6F');
   const isMobile = useMediaQuery('(max-width: 767px)');
   const [mobileView, setMobileView] = useState('list');
 
@@ -43,23 +40,9 @@ function App() {
   }, [isMobile, mobileView, selectedSnippet]);
 
   useEffect(() => {
-    if (selectedSnippet?.thumbnail_url) {
-      extractDominantColor(selectedSnippet.thumbnail_url)
-        .then(setSprayColor)
-        .catch(() => setSprayColor('#8C7E6F'));
-    } else {
-      setSprayColor('#8C7E6F');
-    }
-  }, [selectedSnippet?.thumbnail_url]);
-
-  useEffect(() => {
     document.documentElement.classList.toggle('dark', dark);
     localStorage.setItem('theme', dark ? 'dark' : 'light');
   }, [dark]);
-
-  useEffect(() => {
-    localStorage.setItem('spray', sprayOn ? 'on' : 'off');
-  }, [sprayOn]);
 
   useEffect(() => {
     return onAuthStateChanged(auth, (firebaseUser) => {
@@ -209,31 +192,8 @@ function App() {
 
   if (authLoading) return null;
 
-  // Parse hex to 0-1 RGB for feColorMatrix
-  const hexToMatrix = (hex) => {
-    const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
-    if (!m) return '0.55 0 0 0 0  0.49 0 0 0 0  0.44 0 0 0 0  0 0 0 0 1';
-    const r = (parseInt(m[1], 16) / 255).toFixed(3);
-    const g = (parseInt(m[2], 16) / 255).toFixed(3);
-    const b = (parseInt(m[3], 16) / 255).toFixed(3);
-    return `${r} 0 0 0 0  ${g} 0 0 0 0  ${b} 0 0 0 0  0 0 0 0 1`;
-  };
-  const spraySvg = `data:image/svg+xml,${encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><filter id="s"><feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" result="n"/><feComponentTransfer in="n" result="norm"><feFuncR type="linear" slope="1.2" intercept="0.3"/><feFuncG type="linear" slope="1.2" intercept="0.3"/><feFuncB type="linear" slope="1.2" intercept="0.3"/><feFuncA type="discrete" tableValues="1"/></feComponentTransfer><feColorMatrix in="norm" type="matrix" values="${hexToMatrix(sprayColor)}" result="colored"/></filter><rect width="180" height="180" fill="white" filter="url(%23s)"/></svg>`
-  )}`;
-
   return (
     <div className="app-wrapper">
-      {sprayOn && (
-        <div
-          className="spray-overlay"
-          style={{
-            backgroundColor: sprayColor,
-            backgroundImage: `url(${spraySvg})`,
-          }}
-          aria-hidden
-        />
-      )}
       <header className="app-header">
         <div className="app-header-left">
           <button
