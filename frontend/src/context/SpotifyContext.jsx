@@ -24,6 +24,7 @@ export function SpotifyProvider({ children }) {
   const snippetMonitorRef = useRef(null);
   const playerRef = useRef(null);
   const deviceIdRef = useRef(null);
+  const previousDeviceRef = useRef(null);
 
   const clearSnippetMonitor = () => {
     if (snippetMonitorRef.current) {
@@ -37,6 +38,59 @@ export function SpotifyProvider({ children }) {
     if (!isTokenExpired()) return getStoredToken();
     return refreshAccessToken(clientId);
   }, [clientId]);
+
+  const capturePreviousDevice = async (token) => {
+    previousDeviceRef.current = null;
+    const res = await fetch('https://api.spotify.com/v1/me/player', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.status === 204 || !res.ok) return;
+    const data = await res.json().catch(() => null);
+    const deviceId = data?.device?.id;
+    if (deviceId && deviceId !== deviceIdRef.current) {
+      previousDeviceRef.current = { id: deviceId, name: data.device.name };
+    }
+  };
+
+  const releasePlaybackDevice = async (token, { useFallback = true } = {}) => {
+    const snipperId = deviceIdRef.current;
+    let targetId = previousDeviceRef.current?.id;
+
+    if (!targetId && useFallback) {
+      const res = await fetch('https://api.spotify.com/v1/me/player/devices', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const fallback = data.devices?.find((d) => d.id !== snipperId && !d.is_restricted);
+        targetId = fallback?.id;
+      }
+    }
+
+    previousDeviceRef.current = null;
+    if (!targetId) return;
+
+    await fetch('https://api.spotify.com/v1/me/player', {
+      method: 'PUT',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ device_ids: [targetId], play: false }),
+    }).catch(() => {});
+  };
+
+  const finishSnippetPlayback = useCallback(async () => {
+    clearSnippetMonitor();
+    const p = playerRef.current;
+    if (p) {
+      try {
+        await p.pause();
+      } catch (_) {}
+    }
+    const token = await getToken();
+    if (token) await releasePlaybackDevice(token);
+  }, [getToken]);
 
   const [tokenReady, setTokenReady] = useState(!!getStoredToken());
 
@@ -154,7 +208,12 @@ export function SpotifyProvider({ children }) {
         p.pause();
       } catch (_) {}
     }
-  }, []);
+    if (previousDeviceRef.current) {
+      getToken().then((token) => {
+        if (token) releasePlaybackDevice(token, { useFallback: false });
+      });
+    }
+  }, [getToken]);
 
   const disconnect = useCallback(() => {
     stopSnippet();
@@ -205,6 +264,8 @@ export function SpotifyProvider({ children }) {
 
       const authHeaders = { Authorization: `Bearer ${token}` };
       const jsonHeaders = { ...authHeaders, 'Content-Type': 'application/json' };
+
+      await capturePreviousDevice(token);
 
       const transferRes = await fetch('https://api.spotify.com/v1/me/player', {
         method: 'PUT',
@@ -278,17 +339,14 @@ export function SpotifyProvider({ children }) {
       const timeoutAt = Date.now() + (end - start) + 4000;
 
       return new Promise((resolve) => {
-        const finish = (result) => {
-          clearSnippetMonitor();
+        const finish = async (result) => {
+          await finishSnippetPlayback();
           resolve(result);
         };
 
         snippetMonitorRef.current = setInterval(async () => {
           if (Date.now() > timeoutAt) {
-            try {
-              await p.pause();
-            } catch (_) {}
-            finish({ ok: true });
+            await finish({ ok: true });
             return;
           }
 
@@ -296,15 +354,12 @@ export function SpotifyProvider({ children }) {
           if (!state) return;
 
           if (state.position >= end) {
-            try {
-              await p.pause();
-            } catch (_) {}
-            finish({ ok: true });
+            await finish({ ok: true });
           }
         }, 150);
       });
     },
-    [getToken]
+    [getToken, finishSnippetPlayback]
   );
 
   const hasToken = !!getStoredToken();
